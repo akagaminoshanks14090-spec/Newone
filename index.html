@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🔥 Bet Tracker ULTRA</title>
+  <title>Dosti Rahegi ya Nhi ?</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -36,6 +36,10 @@
     select {
       padding: 10px;
       border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      font-weight: bold;
+      width: 95%;
     }
 
     #coin {
@@ -63,44 +67,137 @@
       width: 95%;
       margin: auto;
       border-collapse: collapse;
+      font-size: 14px;
     }
 
     td, th {
-      padding: 10px;
+      padding: 8px 5px;
       border-bottom: 1px solid rgba(255,255,255,0.2);
     }
 
     img.logo {
-      width: 35px;
-      height: 35px;
+      width: 25px;
+      height: 25px;
       border-radius: 50%;
       background: white;
-      padding: 3px;
+      padding: 2px;
       margin-right: 5px;
+      vertical-align: middle;
     }
 
     canvas { max-width: 300px; margin: auto; }
 
     .currentMatch {
-      background: rgba(0,255,0,0.2);
+      background: rgba(0,255,0,0.1);
+    }
+
+    /* COMPACT CENTERED CALENDAR STYLES */
+    .calendar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .calendar-layout {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, clamp(30px, 8vw, 35px));
+      gap: 4px;
+    }
+    .cal-day {
+      background: rgba(255,255,255,0.1);
+      padding: 6px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: 0.2s;
+    }
+    .cal-day:hover { background: rgba(255,255,255,0.3); }
+    
+    /* UPCOMING MATCH COLOR */
+    .cal-day.has-match {
+      background: rgba(0, 255, 136, 0.2);
+      border: 1px solid #00ff88;
+    }
+    
+    /* COMPLETED MATCH COLOR */
+    .cal-day.completed-match {
+      background: rgba(0, 170, 255, 0.2);
+      border: 1px solid #00aaff;
+      color: white;
+    }
+
+    /* TODAY'S COLOR */
+    .cal-day.today {
+      background: gold !important;
+      color: black !important;
       font-weight: bold;
+      box-shadow: 0 0 10px gold;
+      border: none !important;
+    }
+
+    .cal-header {
+      font-weight: bold;
+      color: #aaa;
+      font-size: 10px;
+      padding-bottom: 2px;
+    }
+
+    /* Side Logos (Made Much Larger) */
+    .team-logo-large {
+      width: clamp(60px, 18vw, 85px);
+      height: clamp(60px, 18vw, 85px);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 6px;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+      object-fit: contain;
+      transition: transform 0.3s, box-shadow 0.3s;
+      flex-shrink: 0;
+    }
+
+    .badge-pending {
+      background: rgba(255, 165, 0, 0.2);
+      color: orange;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .btn-resolve {
+      background: #00ff88;
+      color: black;
+      padding: 4px 8px;
+      font-size: 11px;
+      margin-top: 4px;
     }
   </style>
 </head>
 
 <body>
 
-<h1>🔥 Bet Tracker ULTRA</h1>
+<h1>Dosti Rahegi ya Nhi ?</h1>
 <p>Shanks ⚔️ vs Whitebeard 🌊</p>
 
-<!-- 🏏 LIVE SCOREBOARD -->
-<div class="card">
-  <h3>🏏 Live IPL Scoreboard</h3>
+<div class="card calendar-container">
+  <h3 id="calendarMonth" style="margin: 5px 0;">📅 Match Calendar</h3>
   
+  <div class="calendar-layout">
+    <img id="calLogoLeft" class="team-logo-large" src="" style="display: none;">
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <img id="calLogoRight" class="team-logo-large" src="" style="display: none;">
+  </div>
+
+  <p id="calendarSelectedMatch" style="color: #00ff88; font-weight: bold; margin-bottom: 0; font-size: 14px; margin-top: 15px;"></p>
 </div>
 
 <div class="card">
-  <select id="match"></select>
+  <select id="match" onchange="updateCalendarLogos()"></select>
 </div>
 
 <div class="card">
@@ -111,7 +208,7 @@
 
   <div id="coin">?</div>
 
-  <select id="callChoice" disabled>
+  <select id="callChoice" disabled style="width: auto; margin-top: 15px;">
     <option value="">Head/Tail</option>
     <option>Head</option>
     <option>Tail</option>
@@ -120,16 +217,16 @@
   <br><br>
   <button onclick="startToss()">Flip Coin</button>
 
-  <p id="tossResult"></p>
+  <p id="tossResult" style="font-weight: bold; color: gold;"></p>
 
-  <select id="teamChoice"></select>
+  <select id="teamChoice" style="width: auto;"></select>
 </div>
 
 <div class="card">
-  <button onclick="addMatch()">Add Match ₹100</button>
+  <button onclick="lockBet()" style="width: 100%; background: #00ff88; color: black; font-size: 16px;">🔒 Lock Bet ₹100</button>
 </div>
 
-<div class="card">
+<div class="card" style="overflow-x: auto;">
   <table>
     <thead>
       <tr>
@@ -157,7 +254,7 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } 
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -175,18 +272,18 @@ let matches=[];
 let tossWinner="";
 let caller="";
 
-// LOGOS
+// FIXED WIKIMEDIA LOGOS
 const logos = {
-  RCB:"https://1000logos.net/wp-content/uploads/2024/03/RCB-Logo.png",
-  MI:"https://1000logos.net/wp-content/uploads/2024/03/Mumbai-Indians-Logo.png",
-  CSK:"https://1000logos.net/wp-content/uploads/2024/03/CSK-Logo.png",
-  KKR:"https://1000logos.net/wp-content/uploads/2024/03/KKR-Logo.png",
-  RR:"https://1000logos.net/wp-content/uploads/2024/03/Rajasthan-Royals-Logo.png",
-  DC:"https://1000logos.net/wp-content/uploads/2024/03/Delhi-Capitals-Logo.png",
-  PBKS:"https://1000logos.net/wp-content/uploads/2024/03/Punjab-Kings-Logo.png",
-  SRH:"https://1000logos.net/wp-content/uploads/2024/03/Sunrisers-Hyderabad-Logo.png",
-  GT:"https://1000logos.net/wp-content/uploads/2024/03/Gujarat-Titans-Logo.png",
-  LSG:"https://1000logos.net/wp-content/uploads/2024/03/Lucknow-Super-Giants-Logo.png"
+  RCB: "https://upload.wikimedia.org/wikipedia/en/1/1c/Royal_Challengers_Bengaluru_logo.png",
+  MI: "https://upload.wikimedia.org/wikipedia/en/c/cd/Mumbai_Indians_Logo.svg",
+  CSK: "https://upload.wikimedia.org/wikipedia/en/2/2b/Chennai_Super_Kings_Logo.svg",
+  KKR: "https://upload.wikimedia.org/wikipedia/en/4/4c/Kolkata_Knight_Riders_Logo.svg",
+  RR: "https://upload.wikimedia.org/wikipedia/en/6/60/Rajasthan_Royals_Logo.svg",
+  DC: "https://upload.wikimedia.org/wikipedia/en/2/2f/Delhi_Capitals.svg",
+  PBKS: "https://upload.wikimedia.org/wikipedia/en/d/d4/Punjab_Kings_Logo.svg",
+  SRH: "https://upload.wikimedia.org/wikipedia/en/8/81/Sunrisers_Hyderabad.svg",
+  GT: "https://upload.wikimedia.org/wikipedia/en/0/09/Gujarat_Titans_Logo.svg",
+  LSG: "https://upload.wikimedia.org/wikipedia/en/a/a9/Lucknow_Super_Giants_IPL_Logo.svg"
 };
 
 const matchList = [
@@ -262,30 +359,132 @@ const matchList = [
   {id:70, date:"2026-05-24", name:"Match 70 - MI vs RR", teams:["MI","RR"]},
 ];
 
-// dropdown
-const dropdown=document.getElementById("match");
-matchList.forEach(m=>{
-  let o=document.createElement("option");
-  o.value=m.id; o.text=m.name;
-  dropdown.appendChild(o);
-});
+const dropdown = document.getElementById("match");
 
-// auto today match
-function selectTodayMatch(){
-  let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
-  let m=matchList.find(x=>x.date===today);
-  if(m) dropdown.value=m.id;
+// CALENDAR & MATCH FIXING LOGIC
+function renderCalendar() {
+  const grid = document.getElementById("calendarGrid");
+  const monthLabel = document.getElementById("calendarMonth");
+  
+  let todayDate = new Date();
+  let todayStr = todayDate.toLocaleDateString("en-CA", {timeZone: "Asia/Kolkata"});
+  
+  let year = todayDate.getFullYear();
+  let month = todayDate.getMonth();
+  
+  monthLabel.innerText = `📅 ${todayDate.toLocaleString('default', { month: 'long' })} ${year}`;
+  
+  let firstDay = new Date(year, month, 1).getDay();
+  let daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  let html = '';
+  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  days.forEach(d => html += `<div class="cal-header">${d}</div>`);
+  
+  for(let i=0; i<firstDay; i++) { html += `<div></div>`; }
+  
+  for(let d=1; d<=daysInMonth; d++) {
+    let dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    
+    // Logic for finding out state of the day
+    let hasMatch = matchList.some(m => m.date === dateStr);
+    let isToday = dateStr === todayStr;
+    let isPast = dateStr < todayStr;
+    
+    // Check if any bet on this date is already "Resolved" in our database
+    let hasResolvedBet = matches.some(bet => bet.status === "Resolved" && matchList.find(m => m.name === bet.match)?.date === dateStr);
+
+    let classes = "cal-day";
+    
+    if (hasMatch) {
+      // If it's resolved OR it's a past date, mark it as completed (blue)
+      if (hasResolvedBet || isPast) {
+        classes += " completed-match";
+      } else {
+        classes += " has-match"; // Upcoming (green)
+      }
+    }
+    
+    if (isToday) classes += " today"; // Overrides border colors visually
+    
+    html += `<div class="${classes}" onclick="selectDate('${dateStr}')">${d}</div>`;
+  }
+  grid.innerHTML = html;
 }
-selectTodayMatch();
 
-// toss start
+// Function to update the side logos based on the currently selected match
+window.updateCalendarLogos = function() {
+  const matchId = dropdown.value;
+  const logoLeft = document.getElementById("calLogoLeft");
+  const logoRight = document.getElementById("calLogoRight");
+  
+  if (!matchId) {
+    logoLeft.style.display = "none";
+    logoRight.style.display = "none";
+    return;
+  }
+
+  let m = matchList.find(x => x.id == matchId);
+  if (m) {
+    // If logo isn't in dictionary, fallback to transparent 1x1 image instead of a broken icon
+    logoLeft.src = logos[m.teams[0]] || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+    logoRight.src = logos[m.teams[1]] || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+    logoLeft.style.display = "block";
+    logoRight.style.display = "block";
+  }
+};
+
+window.selectDate = function(dateStr) {
+  let matchesOnDate = matchList.filter(x => x.date === dateStr);
+  const statusText = document.getElementById("calendarSelectedMatch");
+  
+  dropdown.innerHTML = "";
+
+  if(matchesOnDate.length > 0) {
+    matchesOnDate.forEach(m => {
+      let o = document.createElement("option");
+      o.value = m.id; o.text = m.name;
+      dropdown.appendChild(o);
+    });
+    
+    statusText.innerText = matchesOnDate.length > 1 ? `Selected: ${matchesOnDate.length} Matches` : `Selected: ${matchesOnDate[0].name}`;
+    statusText.style.color = "#00ff88";
+  } else {
+    let o = document.createElement("option");
+    o.value = ""; o.text = "No matches scheduled today";
+    dropdown.appendChild(o);
+    
+    statusText.innerText = "No match on this date";
+    statusText.style.color = "#ff4444";
+  }
+
+  // Clear toss arena when switching days
+  tossWinner="";
+  document.getElementById("tossResult").innerText = "";
+  document.getElementById("teamChoice").innerHTML = "";
+  document.getElementById("callerName").innerText = "";
+  document.getElementById("callChoice").value = "";
+  document.getElementById("callChoice").disabled = true;
+
+  // Update visual logos after selecting date
+  updateCalendarLogos();
+}
+
+function selectTodayMatch() {
+  let today = new Date().toLocaleDateString("en-CA", {timeZone: "Asia/Kolkata"});
+  selectDate(today); 
+}
+
+// ------------------------------ //
+
 window.initToss=function(){
+  if(!dropdown.value) return alert("Please select a valid match day on the calendar first!");
+
   caller=Math.random()>0.5?p1:p2;
   document.getElementById("callerName").innerText=`🎯 ${caller} will call`;
   document.getElementById("callChoice").disabled=false;
 };
 
-// toss flip
 window.startToss=function(){
   let call=document.getElementById("callChoice").value;
   if(!call||!caller) return alert("Start toss properly");
@@ -298,12 +497,9 @@ window.startToss=function(){
     coin.innerText=result==="Head"?"H":"T";
 
     tossWinner=(call===result)?caller:(caller===p1?p2:p1);
-
-    document.getElementById("tossResult").innerText=
-      `${caller} → ${call} → ${result} → ${tossWinner}`;
+    document.getElementById("tossResult").innerText=`${caller} → ${call} → ${result} → ${tossWinner} wins toss!`;
 
     let m=matchList.find(x=>x.id==dropdown.value);
-
     document.getElementById("teamChoice").innerHTML=`
       <option value="">Choose Team</option>
       <option>${m.teams[0]}</option>
@@ -314,83 +510,128 @@ window.startToss=function(){
   },1000);
 };
 
-// ADD MATCH (manual winner)
-window.addMatch=async function(){
-
+// LOCK BET
+window.lockBet=async function(){
+  if(!dropdown.value) return alert("Please select a match!");
   let team=document.getElementById("teamChoice").value;
-  if(!team||!tossWinner) return alert("Finish toss");
+  if(!team||!tossWinner) return alert("Finish toss first!");
 
   let m=matchList.find(x=>x.id==dropdown.value);
 
-  let real=prompt(`Enter winner (${m.teams[0]}/${m.teams[1]})`);
-
-  let winner=(team===real)?tossWinner:(tossWinner===p1?p2:p1);
-
   await addDoc(collection(db,"bets"),{
-    match:m.name,winner,team,tossWinner,amount:100
+    match: m.name,
+    team: team,
+    tossWinner: tossWinner,
+    amount: 100,
+    status: "Pending",
+    winner: null 
   });
 
   tossWinner="";
+  document.getElementById("tossResult").innerText = "";
+  document.getElementById("teamChoice").innerHTML = "";
+  document.getElementById("callerName").innerText = "";
+  document.getElementById("callChoice").value = "";
+  document.getElementById("callChoice").disabled = true;
 };
 
-// delete
+// RESOLVE BET 
+window.resolveBet = async function(id) {
+  let bet = matches.find(b => b.id === id);
+  let m = matchList.find(x => x.name === bet.match);
+  
+  if (!m) return alert("Could not find match info!");
+
+  let realMatchWinner = prompt(`Who won the actual match? (${m.teams[0]} or ${m.teams[1]})`);
+  
+  if (!realMatchWinner || (realMatchWinner !== m.teams[0] && realMatchWinner !== m.teams[1])) {
+    return alert(`Please type exactly ${m.teams[0]} or ${m.teams[1]}`);
+  }
+
+  let betWinner = (bet.team === realMatchWinner) ? bet.tossWinner : (bet.tossWinner === p1 ? p2 : p1);
+
+  await updateDoc(doc(db, "bets", id), {
+    status: "Resolved",
+    winner: betWinner
+  });
+};
+
 window.deleteMatch=id=>deleteDoc(doc(db,"bets",id));
 
-// render
+// render history
 onSnapshot(collection(db,"bets"),snap=>{
   matches=[]; snap.forEach(d=>matches.push({id:d.id,...d.data()}));
   render();
 });
 
 function render(){
-  let p1T=0,p2T=0,html="",last="",streak=0;
+  let p1T=0, p2T=0, html="", last="", streak=0;
   let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
 
-  matches.forEach(m=>{
-    if(m.winner===p1) p1T+=100;
-    else p2T+=100;
+  matches.forEach(m => {
+    if (m.status === "Resolved") {
+      if(m.winner === p1) p1T += m.amount;
+      else p2T += m.amount;
 
-    if(m.winner===last) streak++;
-    else {streak=1; last=m.winner;}
+      if(m.winner === last) streak++;
+      else { streak=1; last=m.winner; }
+    }
 
     let isToday = matchList.find(x=>x.name===m.match)?.date===today;
+    
+    let winnerCellHTML = m.status === "Pending" 
+      ? `<div class="badge-pending">⏳ Pending</div>
+         <button class="btn-resolve" onclick="resolveBet('${m.id}')">🏆 Set Winner</button>` 
+      : m.winner;
 
     html+=`
     <tr class="${isToday?'currentMatch':''}">
-      <td>${m.match}</td>
-      <td>${m.winner}</td>
+      <td style="font-size: 11px;">${m.match}</td>
+      <td>${winnerCellHTML}</td>
       <td>${m.tossWinner}</td>
-      <td><img class="logo" src="${logos[m.team]}"> ${m.team}</td>
-      <td><button onclick="deleteMatch('${m.id}')">❌</button></td>
+      <td><img class="logo" src="${logos[m.team] || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}">${m.team}</td>
+      <td><button onclick="deleteMatch('${m.id}')" style="padding: 5px; background: #ff4444; color: white;">❌</button></td>
     </tr>`;
   });
 
   document.getElementById("table").innerHTML=html;
 
-  let diff=p1T-p2T;
-
-  document.getElementById("score").innerText=
-    diff>0?`${p2} owes ${p1} ₹${diff}`:
-    diff<0?`${p1} owes ${p2} ₹${Math.abs(diff)}`:
+  let diff = p1T - p2T;
+  document.getElementById("score").innerText =
+    diff > 0 ? `${p2} owes ${p1} ₹${diff}` :
+    diff < 0 ? `${p1} owes ${p2} ₹${Math.abs(diff)}` :
     "All settled 🤝";
 
-  let total=p1T+p2T;
-  document.getElementById("chances").innerText=
-    `${p1}: ${(p1T/total*100||50).toFixed(1)}% | ${p2}: ${(p2T/total*100||50).toFixed(1)}%`;
+  let total = p1T + p2T;
+  if (total > 0) {
+    document.getElementById("chances").innerText = `${p1}: ${(p1T/total*100).toFixed(1)}% | ${p2}: ${(p2T/total*100).toFixed(1)}%`;
+  } else {
+    document.getElementById("chances").innerText = "No matches resolved yet.";
+  }
 
-  document.getElementById("streak").innerText=
-    `🔥 Streak: ${last} (${streak})`;
+  document.getElementById("streak").innerText = last ? `🔥 Streak: ${last} (${streak})` : `🔥 Streak: 0`;
 
-  updateChart(p1T,p2T);
+  updateChart(p1T, p2T);
+  
+  // Re-render calendar so any newly resolved matches instantly change to Blue!
+  renderCalendar();
+  
+  // Only auto-select today on the very first load
+  if(!document.getElementById("calendarSelectedMatch").innerText) {
+      selectTodayMatch();
+  }
 }
 
 // chart
 let chart;
 function updateChart(a,b){
   if(chart) chart.destroy();
+  if(a === 0 && b === 0) return;
+  
   chart=new Chart(document.getElementById("chart"),{
     type:"pie",
-    data:{labels:[p1,p2],datasets:[{data:[a,b]}]}
+    data:{labels:[p1,p2],datasets:[{data:[a,b]}]},
+    options: { plugins: { legend: { labels: { color: 'white' } } } }
   });
 }
 
