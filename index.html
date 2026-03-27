@@ -1,50 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Live Bet Tracker</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+  <title>🔥 Bet Tracker</title>
 
   <style>
-    body { font-family: Arial; text-align: center; }
-    input, select, button { margin: 5px; padding: 8px; }
-    table { margin: auto; border-collapse: collapse; }
-    td, th { border: 1px solid black; padding: 10px; }
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #111;
+      color: white;
+    }
+
+    h1 { color: gold; }
+
+    input, select, button {
+      margin: 5px;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: gold;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    td, th {
+      border: 1px solid white;
+      padding: 10px;
+    }
+
+    .shanks { color: red; }
+    .whitebeard { color: lightblue; }
   </style>
 </head>
+
 <body>
 
-<h1>🔥 Live Bet Tracker</h1>
+<h1>🔥 Me VS My Buddy</h1>
 
-<h2>Players</h2>
-<input id="p1" placeholder="Player 1">
-<input id="p2" placeholder="Player 2">
+<h3>Players</h3>
+<p class="shanks"><b>Player 1:</b> Shanks</p>
+<p class="whitebeard"><b>Player 2:</b> Whitebeard</p>
 
-<h2>Add Match</h2>
+<h3>Add Match</h3>
 <input id="match" placeholder="Match Name">
 <input id="amount" type="number" placeholder="Amount">
-<select id="winner"></select>
 
+<select id="winner">
+  <option value="">Select Winner</option>
+  <option value="Shanks">Shanks</option>
+  <option value="Whitebeard">Whitebeard</option>
+</select>
+
+<br>
 <button onclick="addMatch()">Add Match</button>
 
-<h2>Matches</h2>
+<h3>Matches</h3>
 <table>
   <thead>
     <tr>
       <th>Match</th>
       <th>Amount</th>
       <th>Winner</th>
+      <th>Delete</th>
     </tr>
   </thead>
   <tbody id="table"></tbody>
 </table>
 
-<h2>Scoreboard</h2>
+<h3>Scoreboard</h3>
 <p id="score"></p>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBGKX55Vsq5K7J74UTT49s-VLr6Zwik35A",
@@ -54,25 +92,16 @@ const firebaseConfig = {
   messagingSenderId: "746521229620",
   appId: "1:746521229620:web:12564f1daeb6a74c798d61"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const p1 = "Shanks";
+const p2 = "Whitebeard";
+
 let matches = [];
 
-function updateWinnerOptions() {
-  let p1 = document.getElementById("p1").value;
-  let p2 = document.getElementById("p2").value;
-
-  document.getElementById("winner").innerHTML = `
-    <option value="">Select Winner</option>
-    <option value="${p1}">${p1}</option>
-    <option value="${p2}">${p2}</option>
-  `;
-}
-
-document.getElementById("p1").addEventListener("input", updateWinnerOptions);
-document.getElementById("p2").addEventListener("input", updateWinnerOptions);
-
+// ➕ Add Match
 window.addMatch = async function () {
   let match = document.getElementById("match").value;
   let amount = parseInt(document.getElementById("amount").value);
@@ -88,19 +117,32 @@ window.addMatch = async function () {
     amount,
     winner
   });
+
+  document.getElementById("match").value = "";
+  document.getElementById("amount").value = "";
 };
 
-// 🔥 REAL-TIME SYNC
+// 🗑️ Delete Match
+window.deleteMatch = async function (id) {
+  if (confirm("Delete this match?")) {
+    await deleteDoc(doc(db, "bets", id));
+  }
+};
+
+// 🔄 Real-time sync
 onSnapshot(collection(db, "bets"), (snapshot) => {
   matches = [];
-  snapshot.forEach(doc => matches.push(doc.data()));
+  snapshot.forEach(d => {
+    matches.push({
+      id: d.id,
+      ...d.data()
+    });
+  });
   render();
 });
 
+// 📊 Render
 function render() {
-  let p1 = document.getElementById("p1").value;
-  let p2 = document.getElementById("p2").value;
-
   let p1Total = 0;
   let p2Total = 0;
 
@@ -115,13 +157,28 @@ function render() {
         <td>${m.match}</td>
         <td>₹${m.amount}</td>
         <td>${m.winner}</td>
+        <td>
+          <button onclick="deleteMatch('${m.id}')">❌</button>
+        </td>
       </tr>
     `;
   });
 
   document.getElementById("table").innerHTML = html;
+
+  let diff = p1Total - p2Total;
+  let owesText = "";
+
+  if (diff > 0) {
+    owesText = `${p2} owes ${p1} ₹${diff}`;
+  } else if (diff < 0) {
+    owesText = `${p1} owes ${p2} ₹${Math.abs(diff)}`;
+  } else {
+    owesText = "All settled 🤝";
+  }
+
   document.getElementById("score").innerText =
-    `${p1}: ₹${p1Total} | ${p2}: ₹${p2Total}`;
+    `${p1}: ₹${p1Total} | ${p2}: ₹${p2Total}\n${owesText}`;
 }
 </script>
 
