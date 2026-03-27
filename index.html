@@ -1,85 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🔥 Bet Tracker</title>
+  <title>🔥 Bet Tracker ULTRA</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
+      margin: 0;
+      font-family: 'Segoe UI';
+      background: radial-gradient(circle at top, #0f2027, #000);
       color: white;
+      text-align: center;
     }
 
     h1 { color: gold; }
 
-    input, select, button {
-      margin: 5px;
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border-radius: 15px;
+      padding: 15px;
+      margin: 10px;
     }
 
     button {
+      padding: 10px;
+      border-radius: 10px;
       background: gold;
-      cursor: pointer;
+      border: none;
       font-weight: bold;
+      cursor: pointer;
+    }
+
+    select {
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    #coin {
+      width: 100px;
+      height: 100px;
+      margin: auto;
+      border-radius: 50%;
+      background: radial-gradient(circle, gold, orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: bold;
+      box-shadow: 0 0 20px gold;
+    }
+
+    .flip { animation: flip 1s ease; }
+
+    @keyframes flip {
+      0% { transform: rotateY(0); }
+      100% { transform: rotateY(1800deg); }
     }
 
     table {
+      width: 95%;
       margin: auto;
       border-collapse: collapse;
-      margin-top: 10px;
     }
 
     td, th {
-      border: 1px solid white;
       padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
     }
 
-    .shanks { color: red; }
-    .whitebeard { color: lightblue; }
+    img.logo {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: white;
+      padding: 3px;
+      margin-right: 5px;
+    }
+
+    canvas { max-width: 300px; margin: auto; }
+
+    .currentMatch {
+      background: rgba(0,255,0,0.2);
+      font-weight: bold;
+    }
   </style>
 </head>
 
 <body>
 
-<h1>🔥 Me VS My Buddy</h1>
+<h1>🔥 Bet Tracker ULTRA</h1>
+<p>Shanks ⚔️ vs Whitebeard 🌊</p>
 
-<h3>Players</h3>
-<p class="shanks"><b>Player 1:</b> Shanks</p>
-<p class="whitebeard"><b>Player 2:</b> Whitebeard</p>
+<!-- LIVE SCOREBOARD -->
+<div class="card">
+  <h3>🏏 Live IPL Scoreboard</h3>
+  
+</div>
 
-<h3>Add Match</h3>
-<input id="match" placeholder="Match Name">
-<input id="amount" type="number" placeholder="Amount">
+<div class="card">
+  <select id="match"></select>
+</div>
 
-<select id="winner">
-  <option value="">Select Winner</option>
-  <option value="Shanks">Shanks</option>
-  <option value="Whitebeard">Whitebeard</option>
-</select>
+<div class="card">
+  <h3>🪙 Toss Arena</h3>
 
-<br>
-<button onclick="addMatch()">Add Match</button>
+  <button onclick="initToss()">Start Toss</button>
+  <p id="callerName"></p>
 
-<h3>Matches</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Match</th>
-      <th>Amount</th>
-      <th>Winner</th>
-      <th>Delete</th>
-    </tr>
-  </thead>
-  <tbody id="table"></tbody>
-</table>
+  <div id="coin">?</div>
 
-<h3>Scoreboard</h3>
-<p id="score"></p>
+  <select id="callChoice" disabled>
+    <option value="">Head/Tail</option>
+    <option>Head</option>
+    <option>Tail</option>
+  </select>
+
+  <br><br>
+  <button onclick="startToss()">Flip Coin</button>
+
+  <p id="tossResult"></p>
+
+  <select id="teamChoice"></select>
+</div>
+
+<div class="card">
+  <button onclick="addMatch()">Add Match ₹100</button>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Match</th>
+        <th>Winner</th>
+        <th>Toss</th>
+        <th>Team</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="table"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3 id="score"></h3>
+  <p id="chances"></p>
+  <p id="streak"></p>
+</div>
+
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -87,99 +163,262 @@ from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyBGKX55Vsq5K7J74UTT49s-VLr6Zwik35A",
   authDomain: "me-vs-my-buddy.firebaseapp.com",
-  projectId: "me-vs-my-buddy",
-  storageBucket: "me-vs-my-buddy.firebasestorage.app",
-  messagingSenderId: "746521229620",
-  appId: "1:746521229620:web:12564f1daeb6a74c798d61"
+  projectId: "me-vs-my-buddy"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const p1 = "Shanks";
-const p2 = "Whitebeard";
+const p1="Shanks", p2="Whitebeard";
 
-let matches = [];
+let matches=[];
+let tossWinner="";
+let caller="";
 
-// ➕ Add Match
-window.addMatch = async function () {
-  let match = document.getElementById("match").value;
-  let amount = parseInt(document.getElementById("amount").value);
-  let winner = document.getElementById("winner").value;
+// LOGOS
+const logos = {
+  RCB:"https://1000logos.net/wp-content/uploads/2024/03/RCB-Logo.png",
+  MI:"https://1000logos.net/wp-content/uploads/2024/03/Mumbai-Indians-Logo.png",
+  CSK:"https://1000logos.net/wp-content/uploads/2024/03/CSK-Logo.png",
+  KKR:"https://1000logos.net/wp-content/uploads/2024/03/KKR-Logo.png",
+  RR:"https://1000logos.net/wp-content/uploads/2024/03/Rajasthan-Royals-Logo.png",
+  DC:"https://1000logos.net/wp-content/uploads/2024/03/Delhi-Capitals-Logo.png",
+  PBKS:"https://1000logos.net/wp-content/uploads/2024/03/Punjab-Kings-Logo.png",
+  SRH:"https://1000logos.net/wp-content/uploads/2024/03/Sunrisers-Hyderabad-Logo.png",
+  GT:"https://1000logos.net/wp-content/uploads/2024/03/Gujarat-Titans-Logo.png",
+  LSG:"https://1000logos.net/wp-content/uploads/2024/03/Lucknow-Super-Giants-Logo.png"
+};
 
-  if (!match || !amount || !winner) {
-    alert("Fill all fields!");
+const matchList = [
+  {id:1, date:"2026-03-28", name:"Match 1 - RCB vs SRH", teams:["RCB","SRH"]},
+  {id:2, date:"2026-03-29", name:"Match 2 - MI vs KKR", teams:["MI","KKR"]},
+  {id:3, date:"2026-03-30", name:"Match 3 - RR vs CSK", teams:["RR","CSK"]},
+  {id:4, date:"2026-03-31", name:"Match 4 - PBKS vs GT", teams:["PBKS","GT"]},
+  {id:5, date:"2026-04-01", name:"Match 5 - LSG vs DC", teams:["LSG","DC"]},
+  {id:6, date:"2026-04-02", name:"Match 6 - KKR vs SRH", teams:["KKR","SRH"]},
+  {id:7, date:"2026-04-03", name:"Match 7 - CSK vs PBKS", teams:["CSK","PBKS"]},
+  {id:8, date:"2026-04-04", name:"Match 8 - DC vs MI", teams:["DC","MI"]},
+  {id:9, date:"2026-04-04", name:"Match 9 - GT vs RR", teams:["GT","RR"]},
+  {id:10, date:"2026-04-05", name:"Match 10 - SRH vs LSG", teams:["SRH","LSG"]},
+  {id:11, date:"2026-04-05", name:"Match 11 - RCB vs CSK", teams:["RCB","CSK"]},
+  {id:12, date:"2026-04-06", name:"Match 12 - KKR vs PBKS", teams:["KKR","PBKS"]},
+  {id:13, date:"2026-04-07", name:"Match 13 - RR vs MI", teams:["RR","MI"]},
+  {id:14, date:"2026-04-08", name:"Match 14 - DC vs GT", teams:["DC","GT"]},
+  {id:15, date:"2026-04-09", name:"Match 15 - KKR vs LSG", teams:["KKR","LSG"]},
+  {id:16, date:"2026-04-10", name:"Match 16 - RR vs RCB", teams:["RR","RCB"]},
+  {id:17, date:"2026-04-11", name:"Match 17 - PBKS vs SRH", teams:["PBKS","SRH"]},
+  {id:18, date:"2026-04-11", name:"Match 18 - CSK vs DC", teams:["CSK","DC"]},
+  {id:19, date:"2026-04-12", name:"Match 19 - LSG vs GT", teams:["LSG","GT"]},
+  {id:20, date:"2026-04-12", name:"Match 20 - MI vs RCB", teams:["MI","RCB"]},
+  {id:21, date:"2026-04-13", name:"Match 21 - SRH vs RR", teams:["SRH","RR"]},
+  {id:22, date:"2026-04-14", name:"Match 22 - CSK vs KKR", teams:["CSK","KKR"]},
+  {id:23, date:"2026-04-15", name:"Match 23 - RCB vs LSG", teams:["RCB","LSG"]},
+  {id:24, date:"2026-04-16", name:"Match 24 - MI vs PBKS", teams:["MI","PBKS"]},
+  {id:25, date:"2026-04-17", name:"Match 25 - GT vs KKR", teams:["GT","KKR"]},
+  {id:26, date:"2026-04-18", name:"Match 26 - RCB vs DC", teams:["RCB","DC"]},
+  {id:27, date:"2026-04-18", name:"Match 27 - SRH vs CSK", teams:["SRH","CSK"]},
+  {id:28, date:"2026-04-19", name:"Match 28 - KKR vs RR", teams:["KKR","RR"]},
+  {id:29, date:"2026-04-19", name:"Match 29 - PBKS vs LSG", teams:["PBKS","LSG"]},
+  {id:30, date:"2026-04-20", name:"Match 30 - GT vs MI", teams:["GT","MI"]},
+  {id:31, date:"2026-04-21", name:"Match 31 - SRH vs DC", teams:["SRH","DC"]},
+  {id:32, date:"2026-04-22", name:"Match 32 - LSG vs RR", teams:["LSG","RR"]},
+  {id:33, date:"2026-04-23", name:"Match 33 - MI vs CSK", teams:["MI","CSK"]},
+  {id:34, date:"2026-04-24", name:"Match 34 - RCB vs GT", teams:["RCB","GT"]},
+  {id:35, date:"2026-04-25", name:"Match 35 - DC vs PBKS", teams:["DC","PBKS"]},
+  {id:36, date:"2026-04-25", name:"Match 36 - RR vs SRH", teams:["RR","SRH"]},
+  {id:37, date:"2026-04-26", name:"Match 37 - GT vs CSK", teams:["GT","CSK"]},
+  {id:38, date:"2026-04-26", name:"Match 38 - LSG vs KKR", teams:["LSG","KKR"]},
+  {id:39, date:"2026-04-27", name:"Match 39 - DC vs RCB", teams:["DC","RCB"]},
+  {id:40, date:"2026-04-28", name:"Match 40 - PBKS vs RR", teams:["PBKS","RR"]},
+  {id:41, date:"2026-04-29", name:"Match 41 - MI vs SRH", teams:["MI","SRH"]},
+  {id:42, date:"2026-04-30", name:"Match 42 - GT vs RCB", teams:["GT","RCB"]},
+  {id:43, date:"2026-05-01", name:"Match 43 - RR vs DC", teams:["RR","DC"]},
+  {id:44, date:"2026-05-02", name:"Match 44 - CSK vs MI", teams:["CSK","MI"]},
+  {id:45, date:"2026-05-03", name:"Match 45 - SRH vs KKR", teams:["SRH","KKR"]},
+  {id:46, date:"2026-05-03", name:"Match 46 - GT vs PBKS", teams:["GT","PBKS"]},
+  {id:47, date:"2026-05-04", name:"Match 47 - MI vs LSG", teams:["MI","LSG"]},
+  {id:48, date:"2026-05-05", name:"Match 48 - DC vs CSK", teams:["DC","CSK"]},
+  {id:49, date:"2026-05-06", name:"Match 49 - SRH vs PBKS", teams:["SRH","PBKS"]},
+  {id:50, date:"2026-05-07", name:"Match 50 - LSG vs RCB", teams:["LSG","RCB"]},
+  {id:51, date:"2026-05-08", name:"Match 51 - DC vs KKR", teams:["DC","KKR"]},
+  {id:52, date:"2026-05-09", name:"Match 52 - RR vs GT", teams:["RR","GT"]},
+  {id:53, date:"2026-05-10", name:"Match 53 - CSK vs LSG", teams:["CSK","LSG"]},
+  {id:54, date:"2026-05-10", name:"Match 54 - RCB vs MI", teams:["RCB","MI"]},
+  {id:55, date:"2026-05-11", name:"Match 55 - PBKS vs DC", teams:["PBKS","DC"]},
+  {id:56, date:"2026-05-12", name:"Match 56 - GT vs SRH", teams:["GT","SRH"]},
+  {id:57, date:"2026-05-13", name:"Match 57 - RCB vs KKR", teams:["RCB","KKR"]},
+  {id:58, date:"2026-05-14", name:"Match 58 - PBKS vs MI", teams:["PBKS","MI"]},
+  {id:59, date:"2026-05-15", name:"Match 59 - LSG vs CSK", teams:["LSG","CSK"]},
+  {id:60, date:"2026-05-16", name:"Match 60 - KKR vs GT", teams:["KKR","GT"]},
+  {id:61, date:"2026-05-17", name:"Match 61 - PBKS vs RCB", teams:["PBKS","RCB"]},
+  {id:62, date:"2026-05-17", name:"Match 62 - DC vs RR", teams:["DC","RR"]},
+  {id:63, date:"2026-05-18", name:"Match 63 - CSK vs SRH", teams:["CSK","SRH"]},
+  {id:64, date:"2026-05-19", name:"Match 64 - RR vs LSG", teams:["RR","LSG"]},
+  {id:65, date:"2026-05-20", name:"Match 65 - KKR vs MI", teams:["KKR","MI"]},
+  {id:66, date:"2026-05-21", name:"Match 66 - CSK vs GT", teams:["CSK","GT"]},
+  {id:67, date:"2026-05-22", name:"Match 67 - SRH vs RCB", teams:["SRH","RCB"]},
+  {id:68, date:"2026-05-23", name:"Match 68 - LSG vs PBKS", teams:["LSG","PBKS"]},
+  {id:69, date:"2026-05-24", name:"Match 69 - KKR vs DC", teams:["KKR","DC"]},
+  {id:70, date:"2026-05-24", name:"Match 70 - MI vs RR", teams:["MI","RR"]},
+];
+const dropdown=document.getElementById("match");
+matchList.forEach(m=>{
+  let o=document.createElement("option");
+  o.value=m.id; o.text=m.name;
+  dropdown.appendChild(o);
+});
+
+// AUTO SELECT TODAY
+function selectTodayMatch(){
+  let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+  let m=matchList.find(x=>x.date===today);
+  if(m) dropdown.value=m.id;
+}
+selectTodayMatch();
+
+// TOSS INIT
+window.initToss=function(){
+  caller=Math.random()>0.5?p1:p2;
+  document.getElementById("callerName").innerText=`🎯 ${caller} will call`;
+  document.getElementById("callChoice").disabled=false;
+};
+
+// TOSS
+window.startToss=function(){
+  let call=document.getElementById("callChoice").value;
+  if(!call||!caller) return alert("Start toss properly");
+
+  let coin=document.getElementById("coin");
+  coin.classList.add("flip");
+
+  setTimeout(()=>{
+    let result=Math.random()>0.5?"Head":"Tail";
+    coin.innerText=result==="Head"?"H":"T";
+
+    tossWinner=(call===result)?caller:(caller===p1?p2:p1);
+
+    document.getElementById("tossResult").innerText=
+      `${caller} → ${call} → ${result} → ${tossWinner}`;
+
+    let m=matchList.find(x=>x.id==dropdown.value);
+
+    document.getElementById("teamChoice").innerHTML=`
+      <option value="">Choose Team</option>
+      <option>${m.teams[0]}</option>
+      <option>${m.teams[1]}</option>
+    `;
+
+    coin.classList.remove("flip");
+  },1000);
+};
+
+// AUTO WINNER
+async function getWinner(t1,t2){
+  try{
+    let res=await fetch("https://api.cricapi.com/v1/currentMatches?apikey=YOUR_KEY");
+    let data=await res.json();
+    let match=data.data.find(m=>m.teams.includes(t1)&&m.teams.includes(t2));
+    if(match && match.status.includes("won")){
+      if(match.status.includes(t1)) return t1;
+      if(match.status.includes(t2)) return t2;
+    }
+    return null;
+  }catch{return null;}
+}
+
+// ADD MATCH
+window.addMatch=async function(){
+  let team=document.getElementById("teamChoice").value;
+  if(!team||!tossWinner) return alert("Finish toss");
+
+  let m=matchList.find(x=>x.id==dropdown.value);
+
+  let real=await getWinner(m.teams[0],m.teams[1]);
+  if(!real){
+    alert("Result not available yet");
     return;
   }
 
-  await addDoc(collection(db, "bets"), {
-    match,
-    amount,
-    winner
+  let winner=(team===real)?tossWinner:(tossWinner===p1?p2:p1);
+
+  await addDoc(collection(db,"bets"),{
+    match:m.name,winner,team,tossWinner,amount:100
   });
 
-  document.getElementById("match").value = "";
-  document.getElementById("amount").value = "";
+  tossWinner="";
 };
 
-// 🗑️ Delete Match
-window.deleteMatch = async function (id) {
-  if (confirm("Delete this match?")) {
-    await deleteDoc(doc(db, "bets", id));
-  }
-};
+// DELETE
+window.deleteMatch=id=>deleteDoc(doc(db,"bets",id));
 
-// 🔄 Real-time sync
-onSnapshot(collection(db, "bets"), (snapshot) => {
-  matches = [];
-  snapshot.forEach(d => {
-    matches.push({
-      id: d.id,
-      ...d.data()
-    });
-  });
+// RENDER
+onSnapshot(collection(db,"bets"),snap=>{
+  matches=[]; snap.forEach(d=>matches.push({id:d.id,...d.data()}));
   render();
 });
 
-// 📊 Render
-function render() {
-  let p1Total = 0;
-  let p2Total = 0;
+function render(){
+  let p1T=0,p2T=0,html="",last="",streak=0;
 
-  let html = "";
+  let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
 
-  matches.forEach(m => {
-    if (m.winner === p1) p1Total += m.amount;
-    else if (m.winner === p2) p2Total += m.amount;
+  matches.forEach(m=>{
+    if(m.winner===p1) p1T+=100;
+    else p2T+=100;
 
-    html += `
-      <tr>
-        <td>${m.match}</td>
-        <td>₹${m.amount}</td>
-        <td>${m.winner}</td>
-        <td>
-          <button onclick="deleteMatch('${m.id}')">❌</button>
-        </td>
-      </tr>
-    `;
+    if(m.winner===last) streak++;
+    else {streak=1; last=m.winner;}
+
+    let isToday = matchList.find(x=>x.name===m.match)?.date===today;
+
+    html+=`
+    <tr class="${isToday?'currentMatch':''}">
+      <td>${m.match}</td>
+      <td>${m.winner}</td>
+      <td>${m.tossWinner}</td>
+      <td>
+        <img class="logo" src="${logos[m.team]}">
+        ${m.team}
+      </td>
+      <td><button onclick="deleteMatch('${m.id}')">❌</button></td>
+    </tr>`;
   });
 
-  document.getElementById("table").innerHTML = html;
+  document.getElementById("table").innerHTML=html;
 
-  let diff = p1Total - p2Total;
-  let owesText = "";
+  let diff=p1T-p2T;
 
-  if (diff > 0) {
-    owesText = `${p2} owes ${p1} ₹${diff}`;
-  } else if (diff < 0) {
-    owesText = `${p1} owes ${p2} ₹${Math.abs(diff)}`;
-  } else {
-    owesText = "All settled 🤝";
-  }
+  document.getElementById("score").innerText=
+    diff>0?`${p2} owes ${p1} ₹${diff}`:
+    diff<0?`${p1} owes ${p2} ₹${Math.abs(diff)}`:
+    "All settled 🤝";
 
-  document.getElementById("score").innerText =
-    `${p1}: ₹${p1Total} | ${p2}: ₹${p2Total}\n${owesText}`;
+  let total=p1T+p2T;
+  let c1=total?((p1T/total)*100).toFixed(1):50;
+  let c2=total?((p2T/total)*100).toFixed(1):50;
+
+  document.getElementById("chances").innerText=
+    `${p1}: ${c1}% | ${p2}: ${c2}%`;
+
+  document.getElementById("streak").innerText=
+    `🔥 Streak: ${last} (${streak})`;
+
+  updateChart(p1T,p2T);
 }
+
+// PIE CHART
+let chart;
+function updateChart(a,b){
+  if(chart) chart.destroy();
+  chart=new Chart(document.getElementById("chart"),{
+    type:"pie",
+    data:{
+      labels:[p1,p2],
+      datasets:[{data:[a,b]}]
+    }
+  });
+}
+
 </script>
 
 </body>
