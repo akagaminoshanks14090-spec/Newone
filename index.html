@@ -93,7 +93,7 @@
 <h1>🔥 Bet Tracker ULTRA</h1>
 <p>Shanks ⚔️ vs Whitebeard 🌊</p>
 
-<!-- LIVE SCOREBOARD -->
+<!-- 🏏 LIVE SCOREBOARD -->
 <div class="card">
   <h3>🏏 Live IPL Scoreboard</h3>
   
@@ -261,6 +261,8 @@ const matchList = [
   {id:69, date:"2026-05-24", name:"Match 69 - KKR vs DC", teams:["KKR","DC"]},
   {id:70, date:"2026-05-24", name:"Match 70 - MI vs RR", teams:["MI","RR"]},
 ];
+
+// dropdown
 const dropdown=document.getElementById("match");
 matchList.forEach(m=>{
   let o=document.createElement("option");
@@ -268,7 +270,7 @@ matchList.forEach(m=>{
   dropdown.appendChild(o);
 });
 
-// AUTO SELECT TODAY
+// auto today match
 function selectTodayMatch(){
   let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
   let m=matchList.find(x=>x.date===today);
@@ -276,14 +278,14 @@ function selectTodayMatch(){
 }
 selectTodayMatch();
 
-// TOSS INIT
+// toss start
 window.initToss=function(){
   caller=Math.random()>0.5?p1:p2;
   document.getElementById("callerName").innerText=`🎯 ${caller} will call`;
   document.getElementById("callChoice").disabled=false;
 };
 
-// TOSS
+// toss flip
 window.startToss=function(){
   let call=document.getElementById("callChoice").value;
   if(!call||!caller) return alert("Start toss properly");
@@ -312,32 +314,15 @@ window.startToss=function(){
   },1000);
 };
 
-// AUTO WINNER
-async function getWinner(t1,t2){
-  try{
-    let res=await fetch("https://api.cricapi.com/v1/currentMatches?apikey=YOUR_KEY");
-    let data=await res.json();
-    let match=data.data.find(m=>m.teams.includes(t1)&&m.teams.includes(t2));
-    if(match && match.status.includes("won")){
-      if(match.status.includes(t1)) return t1;
-      if(match.status.includes(t2)) return t2;
-    }
-    return null;
-  }catch{return null;}
-}
-
-// ADD MATCH
+// ADD MATCH (manual winner)
 window.addMatch=async function(){
+
   let team=document.getElementById("teamChoice").value;
   if(!team||!tossWinner) return alert("Finish toss");
 
   let m=matchList.find(x=>x.id==dropdown.value);
 
-  let real=await getWinner(m.teams[0],m.teams[1]);
-  if(!real){
-    alert("Result not available yet");
-    return;
-  }
+  let real=prompt(`Enter winner (${m.teams[0]}/${m.teams[1]})`);
 
   let winner=(team===real)?tossWinner:(tossWinner===p1?p2:p1);
 
@@ -348,10 +333,10 @@ window.addMatch=async function(){
   tossWinner="";
 };
 
-// DELETE
+// delete
 window.deleteMatch=id=>deleteDoc(doc(db,"bets",id));
 
-// RENDER
+// render
 onSnapshot(collection(db,"bets"),snap=>{
   matches=[]; snap.forEach(d=>matches.push({id:d.id,...d.data()}));
   render();
@@ -359,7 +344,6 @@ onSnapshot(collection(db,"bets"),snap=>{
 
 function render(){
   let p1T=0,p2T=0,html="",last="",streak=0;
-
   let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
 
   matches.forEach(m=>{
@@ -376,10 +360,7 @@ function render(){
       <td>${m.match}</td>
       <td>${m.winner}</td>
       <td>${m.tossWinner}</td>
-      <td>
-        <img class="logo" src="${logos[m.team]}">
-        ${m.team}
-      </td>
+      <td><img class="logo" src="${logos[m.team]}"> ${m.team}</td>
       <td><button onclick="deleteMatch('${m.id}')">❌</button></td>
     </tr>`;
   });
@@ -394,11 +375,8 @@ function render(){
     "All settled 🤝";
 
   let total=p1T+p2T;
-  let c1=total?((p1T/total)*100).toFixed(1):50;
-  let c2=total?((p2T/total)*100).toFixed(1):50;
-
   document.getElementById("chances").innerText=
-    `${p1}: ${c1}% | ${p2}: ${c2}%`;
+    `${p1}: ${(p1T/total*100||50).toFixed(1)}% | ${p2}: ${(p2T/total*100||50).toFixed(1)}%`;
 
   document.getElementById("streak").innerText=
     `🔥 Streak: ${last} (${streak})`;
@@ -406,16 +384,13 @@ function render(){
   updateChart(p1T,p2T);
 }
 
-// PIE CHART
+// chart
 let chart;
 function updateChart(a,b){
   if(chart) chart.destroy();
   chart=new Chart(document.getElementById("chart"),{
     type:"pie",
-    data:{
-      labels:[p1,p2],
-      datasets:[{data:[a,b]}]
-    }
+    data:{labels:[p1,p2],datasets:[{data:[a,b]}]}
   });
 }
 
