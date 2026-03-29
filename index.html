@@ -451,31 +451,31 @@ async function fetchFullMatchData() {
       }
     });
 
-    function processMatches(apiData) {
+ function processMatches(apiData) {
   let matchesList = apiData.typeMatches?.[0]?.seriesMatches || [];
 
   matchesList.forEach(series => {
-    series.seriesAdWrapper?.matches?.forEach(match => {
+    if (!series.seriesAdWrapper) return;
+
+    series.seriesAdWrapper.matches.forEach(match => {
 
       let team1 = match.matchInfo.team1.teamSName;
       let team2 = match.matchInfo.team2.teamSName;
 
       let status = match.matchInfo.status;
 
-  if (status.toLowerCase().includes("won")) {
+      if (status && status.toLowerCase().includes("won")) {
 
-      let winner = status.includes(team1) ? team1 : team2;
+        let winner = status.includes(team1) ? team1 : team2;
 
-    let localMatch = matchList.find(m =>
-      m.teams.includes(team1) && m.teams.includes(team2)
-    );
+        let localMatch = matchList.find(m =>
+          m.teams.includes(team1) && m.teams.includes(team2)
+        );
 
-  if (localMatch) {
-    console.log("🏆 Winner detected:", winner);
-
-    updateMatchResult(localMatch.id, winner);
-  }
-}
+        if (localMatch) {
+          console.log("🏆 Winner detected:", winner);
+          updateMatchResult(localMatch.id, winner);
+        }
       }
     });
   });
@@ -504,6 +504,7 @@ async function fetchFullMatchData() {
 }
 
     setInterval(fetchMatchResultsFromAPI, 30000);
+  fetchMatchResultsFromAPI(); // run immediately
 
 const dropdown = document.getElementById("match");
 
