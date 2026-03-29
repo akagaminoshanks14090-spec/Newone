@@ -272,7 +272,7 @@ import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBGKX55Vsq5K7J74UTT49s-VLr6Zwik35A",
+  apiKey: "YOUR_KEY",
   authDomain: "me-vs-my-buddy.firebaseapp.com",
   projectId: "me-vs-my-buddy"
 };
@@ -283,28 +283,13 @@ const db = getFirestore(app);
 const p1="Shanks", p2="Whitebeard";
 
 let matches=[];
-let matchResults = {};
-let tossWinner="";
-let caller="";
+let matchResults={};
 
-// LOCAL FILES - 100% Reliable!
-const logos = {
-  CSK: "csk.jpg",
-  RCB: "rcb logo.png",
-  MI:  "mi.jpg",
-  KKR: "kkr.png",
-  RR:  "rr.png",
-  DC:  "dc.png",
-  PBKS:"pbks.jpg",
-  SRH: "srh.jpg",
-  GT:  "gt.png",
-  LSG: "lsg.jpg"
-};
-
+// ---------------- MATCH LIST ----------------
 const matchList = [
-  {id:1, date:"2026-03-28", name:"Match 1 - RCB vs SRH", teams:["RCB","SRH"]},
-  {id:2, date:"2026-03-29", name:"Match 2 - MI vs KKR", teams:["MI","KKR"]},
-  {id:3, date:"2026-03-30", name:"Match 3 - RR vs CSK", teams:["RR","CSK"]},
+  {id:1, teams:["RCB","SRH"]},
+  {id:2, teams:["MI","KKR"]},
+  {id:3, teams:["RR","CSK"]},
   {id:4, date:"2026-03-31", name:"Match 4 - PBKS vs GT", teams:["PBKS","GT"]},
   {id:5, date:"2026-04-01", name:"Match 5 - LSG vs DC", teams:["LSG","DC"]},
   {id:6, date:"2026-04-02", name:"Match 6 - KKR vs SRH", teams:["KKR","SRH"]},
@@ -374,76 +359,10 @@ const matchList = [
   {id:70, date:"2026-05-24", name:"Match 70 - MI vs RR", teams:["MI","RR"]},
 ];
 
-  function displayMatch(match) {
-
-  let team1 = match.matchInfo.team1.teamSName;
-  let team2 = match.matchInfo.team2.teamSName;
-
-  let score1 = match.matchScore?.team1Score?.inngs1;
-  let score2 = match.matchScore?.team2Score?.inngs1;
-
-  let status = match.matchInfo.status;
-
-  document.getElementById("liveMatchCard").innerHTML = `
-    <h3>${team1} vs ${team2}</h3>
-  `;
-
-  document.getElementById("scoreDetails").innerHTML = `
-    <p>${team1}: ${score1?.runs || "-"} / ${score1?.wickets || "-"} (${score1?.overs || "-"})</p>
-    <p>${team2}: ${score2?.runs || "-"} / ${score2?.wickets || "-"} (${score2?.overs || "-"})</p>
-  `;
-
-  document.getElementById("matchStatus").innerText = status;
-}
-  setInterval(fetchFullMatchData, 10000);
-
-  
-async function fetchFullMatchData() {
-  const res = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
-    method: "GET",
-    headers: {
-      "X-RapidAPI-Key": "YOUR_API_KEY",
-      "X-RapidAPI-Host": "cricbuzz-cricket.p.rapidapi.com"
-    }
-  });
-
-  const data = await res.json();
-
-  let match = data.typeMatches?.[0]?.seriesMatches?.[0]?.seriesAdWrapper?.matches?.[0];
-
-  if (!match) return;
-
-  displayMatch(match);
-}
-
-  //Live score board logic
-  async function fetchLiveScore() {
-  const res = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
-    method: "GET",
-    headers: {
-      "X-RapidAPI-Key": "YOUR_API_KEY",
-      "X-RapidAPI-Host": "cricbuzz-cricket.p.rapidapi.com"
-    }
-  });
-
-  const data = await res.json();
-
-  let liveMatch = data.typeMatches?.[0]?.seriesMatches?.[0]?.seriesAdWrapper?.matches?.[0];
-
-  if (!liveMatch) return;
-
-  let score = liveMatch.matchScore?.team1Score?.inngs1?.runs || "-";
-  let wickets = liveMatch.matchScore?.team1Score?.inngs1?.wickets || "-";
-  let overs = liveMatch.matchScore?.team1Score?.inngs1?.overs || "-";
-
-  document.getElementById("liveScore").innerText =
-    `🏏 Live: ${score}/${wickets} (${overs} overs)`;
-}
-  setInterval(fetchLiveScore, 10000);
-//Match result  logic
-  async function fetchMatchResultsFromAPI() {
+// ---------------- SINGLE API FETCH ----------------
+async function fetchAllData() {
   try {
-    const response = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
+    const res = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
       method: "GET",
       headers: {
         "X-RapidAPI-Key": "YOUR_API_KEY",
@@ -451,17 +370,49 @@ async function fetchFullMatchData() {
       }
     });
 
- function processMatches(apiData) {
-  let matchesList = apiData.typeMatches?.[0]?.seriesMatches || [];
+    const data = await res.json();
 
-  matchesList.forEach(series => {
+    let match = data?.typeMatches?.[0]?.seriesMatches?.[0]?.seriesAdWrapper?.matches?.[0];
+    if (!match) return;
+
+    displayMatch(match);
+    processMatches(data);
+
+  } catch (err) {
+    console.error("API error:", err);
+  }
+}
+
+// ---------------- LIVE DASHBOARD ----------------
+function displayMatch(match) {
+  let team1 = match.matchInfo.team1.teamSName;
+  let team2 = match.matchInfo.team2.teamSName;
+
+  let s1 = match.matchScore?.team1Score?.inngs1;
+  let s2 = match.matchScore?.team2Score?.inngs1;
+
+  document.getElementById("liveMatchCard").innerHTML =
+    `<h3>${team1} vs ${team2}</h3>`;
+
+  document.getElementById("scoreDetails").innerHTML =
+    `<p>${team1}: ${s1?.runs||"-"}/${s1?.wickets||"-"} (${s1?.overs||"-"})</p>
+     <p>${team2}: ${s2?.runs||"-"}/${s2?.wickets||"-"} (${s2?.overs||"-"})</p>`;
+
+  document.getElementById("matchStatus").innerText =
+    match.matchInfo.status;
+}
+
+// ---------------- AUTO WINNER DETECTION ----------------
+function processMatches(apiData) {
+  let list = apiData?.typeMatches?.[0]?.seriesMatches || [];
+
+  list.forEach(series => {
     if (!series.seriesAdWrapper) return;
 
     series.seriesAdWrapper.matches.forEach(match => {
 
       let team1 = match.matchInfo.team1.teamSName;
       let team2 = match.matchInfo.team2.teamSName;
-
       let status = match.matchInfo.status;
 
       if (status && status.toLowerCase().includes("won")) {
@@ -473,306 +424,55 @@ async function fetchFullMatchData() {
         );
 
         if (localMatch) {
-          console.log("🏆 Winner detected:", winner);
           updateMatchResult(localMatch.id, winner);
         }
       }
     });
   });
 }
-    async function updateMatchResult(matchId, winner) {
 
-  // Prevent duplicate updates
+// ---------------- FIREBASE UPDATE ----------------
+async function updateMatchResult(matchId, winner) {
+
   if (matchResults[matchId] === winner) return;
 
+  matchResults[matchId] = winner;
+
   await addDoc(collection(db, "match_results"), {
-    matchId: matchId,
-    winner: winner
+    matchId,
+    winner
   });
 
   console.log("Auto updated:", matchId, winner);
 }
 
-
-    const data = await response.json();
-
-    processMatches(data);
-
-  } catch (err) {
-    console.error("API error:", err);
-  }
-}
-
-    setInterval(fetchMatchResultsFromAPI, 30000);
-  fetchMatchResultsFromAPI(); // run immediately
-
-const dropdown = document.getElementById("match");
-
-// CALENDAR & MATCH FIXING LOGIC
-function renderCalendar() {
-  const grid = document.getElementById("calendarGrid");
-  const monthLabel = document.getElementById("calendarMonth");
-  
-  let todayDate = new Date();
-  let todayStr = todayDate.toLocaleDateString("en-CA", {timeZone: "Asia/Kolkata"});
-  
-  let year = todayDate.getFullYear();
-  let month = todayDate.getMonth();
-  
-  monthLabel.innerText = `📅 ${todayDate.toLocaleString('default', { month: 'long' })} ${year}`;
-  
-  let firstDay = new Date(year, month, 1).getDay();
-  let daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  let html = '';
-  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-  days.forEach(d => html += `<div class="cal-header">${d}</div>`);
-  
-  for(let i=0; i<firstDay; i++) { html += `<div></div>`; }
-  
-  for(let d=1; d<=daysInMonth; d++) {
-    let dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    
-    let hasMatch = matchList.some(m => m.date === dateStr);
-    let isToday = dateStr === todayStr;
-    let isPast = dateStr < todayStr;
-    
-    let hasResolvedBet = matches.some(bet => bet.status === "Resolved" && matchList.find(m => m.name === bet.match)?.date === dateStr);
-
-    let classes = "cal-day";
-    
-    if (hasMatch) {
-      if (hasResolvedBet || isPast) {
-        classes += " completed-match";
-      } else {
-        classes += " has-match"; 
-      }
-    }
-    
-    if (isToday) classes += " today"; 
-    
-    html += `<div class="${classes}" onclick="selectDate('${dateStr}')">${d}</div>`;
-  }
-  grid.innerHTML = html;
-}
-
-window.updateCalendarLogos = function() {
-  const matchId = dropdown.value;
-  const logoLeft = document.getElementById("calLogoLeft");
-  const logoRight = document.getElementById("calLogoRight");
-  
-  if (!matchId) {
-    logoLeft.style.display = "none";
-    logoRight.style.display = "none";
-    return;
-  }
-
-  let m = matchList.find(x => x.id == matchId);
-  if (m) {
-    // Failsafe in case a local file is ever deleted
-    logoLeft.onerror = function() { this.onerror=null; this.src=`https://ui-avatars.com/api/?name=${m.teams[0]}&background=random&color=fff&rounded=true&size=128&bold=true`; };
-    logoRight.onerror = function() { this.onerror=null; this.src=`https://ui-avatars.com/api/?name=${m.teams[1]}&background=random&color=fff&rounded=true&size=128&bold=true`; };
-    
-    logoLeft.src = logos[m.teams[0]];
-    logoRight.src = logos[m.teams[1]];
-    
-    logoLeft.style.display = "block";
-    logoRight.style.display = "block";
-  }
-};
-
-window.selectDate = function(dateStr) {
-  let matchesOnDate = matchList.filter(x => x.date === dateStr);
-  const statusText = document.getElementById("calendarSelectedMatch");
-  
-  dropdown.innerHTML = "";
-
-  if(matchesOnDate.length > 0) {
-    matchesOnDate.forEach(m => {
-      let o = document.createElement("option");
-      o.value = m.id; o.text = m.name;
-      dropdown.appendChild(o);
-    });
-    
-    statusText.innerText = matchesOnDate.length > 1 ? `Selected: ${matchesOnDate.length} Matches` : `Selected: ${matchesOnDate[0].name}`;
-    statusText.style.color = "#00ff88";
-  } else {
-    let o = document.createElement("option");
-    o.value = ""; o.text = "No matches scheduled today";
-    dropdown.appendChild(o);
-    
-    statusText.innerText = "No match on this date";
-    statusText.style.color = "#ff4444";
-  }
-
-  tossWinner="";
-  document.getElementById("tossResult").innerText = "";
-  document.getElementById("teamChoice").innerHTML = "";
-  document.getElementById("callerName").innerText = "";
-  document.getElementById("callChoice").value = "";
-  document.getElementById("callChoice").disabled = true;
-
-  updateCalendarLogos();
-}
-
-function selectTodayMatch() {
-  let today = new Date().toLocaleDateString("en-CA", {timeZone: "Asia/Kolkata"});
-  selectDate(today); 
-}
-
-// ------------------------------ //
-
-window.initToss=function(){
-  if(!dropdown.value) return alert("Please select a valid match day on the calendar first!");
-
-  caller=Math.random()>0.5?p1:p2;
-  document.getElementById("callerName").innerText=`🎯 ${caller} will call`;
-  document.getElementById("callChoice").disabled=false;
-};
-
-window.startToss=function(){
-  let call=document.getElementById("callChoice").value;
-  if(!call||!caller) return alert("Start toss properly");
-
-  let coin=document.getElementById("coin");
-  coin.classList.add("flip");
-
-  setTimeout(()=>{
-    let result=Math.random()>0.5?"Head":"Tail";
-    coin.innerText=result==="Head"?"H":"T";
-
-    tossWinner=(call===result)?caller:(caller===p1?p2:p1);
-    document.getElementById("tossResult").innerText=`${caller} → ${call} → ${result} → ${tossWinner} wins toss!`;
-
-    let m=matchList.find(x=>x.id==dropdown.value);
-    document.getElementById("teamChoice").innerHTML=`
-      <option value="">Choose Team</option>
-      <option>${m.teams[0]}</option>
-      <option>${m.teams[1]}</option>
-    `;
-
-    coin.classList.remove("flip");
-  },1000);
-};
-
-window.lockBet=async function(){
-  if(!dropdown.value) return alert("Please select a match!");
-  let team=document.getElementById("teamChoice").value;
-  if(!team||!tossWinner) return alert("Finish toss first!");
-
-  let m=matchList.find(x=>x.id==dropdown.value);
-
-  await addDoc(collection(db,"bets"),{
-    match: m.name,
-    team: team,
-    tossWinner: tossWinner,
-    amount: 100,
-    status: "Pending",
-    winner: null 
-  });
-
-  tossWinner="";
-  document.getElementById("tossResult").innerText = "";
-  document.getElementById("teamChoice").innerHTML = "";
-  document.getElementById("callerName").innerText = "";
-  document.getElementById("callChoice").value = "";
-  document.getElementById("callChoice").disabled = true;
-};
-
-window.resolveBet = async function(id) {
-  let bet = matches.find(b => b.id === id);
-  let m = matchList.find(x => x.name === bet.match);
-  
-  if (!m) return alert("Could not find match info!");
-
-  let realMatchWinner = prompt(`Who won the actual match? (${m.teams[0]} or ${m.teams[1]})`);
-  
-  if (!realMatchWinner || (realMatchWinner !== m.teams[0] && realMatchWinner !== m.teams[1])) {
-    return alert(`Please type exactly ${m.teams[0]} or ${m.teams[1]}`);
-  }
-
-  let betWinner = (bet.team === realMatchWinner) ? bet.tossWinner : (bet.tossWinner === p1 ? p2 : p1);
-
-  await updateDoc(doc(db, "bets", id), {
-    status: "Resolved",
-    winner: betWinner
-  });
-};
-
-window.deleteMatch=id=>deleteDoc(doc(db,"bets",id));
-
+// ---------------- FIREBASE LISTENER ----------------
 onSnapshot(collection(db,"bets"),snap=>{
-  matches=[]; snap.forEach(d=>matches.push({id:d.id,...d.data()}));
+  matches=[];
+  snap.forEach(d=>matches.push({id:d.id,...d.data()}));
   render();
 });
 
+// ---------------- RENDER ----------------
 function render(){
-  let p1T=0, p2T=0, html="", last="", streak=0;
-  let today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+  let p1T=0, p2T=0;
 
   matches.forEach(m => {
-    if (m.status === "Resolved") {
-      if(m.winner === p1) p1T += m.amount;
-      else p2T += m.amount;
-
-      if(m.winner === last) streak++;
-      else { streak=1; last=m.winner; }
+    if(m.status==="Resolved"){
+      if(m.winner===p1) p1T+=m.amount;
+      else p2T+=m.amount;
     }
-
-    let isToday = matchList.find(x=>x.name===m.match)?.date===today;
-    
-    let winnerCellHTML = m.status === "Pending" 
-      ? `<div class="badge-pending">⏳ Pending</div>
-         <span class="badge-pending">⏳ Waiting Result</span>` 
-      : m.winner;
-
-    html+=`
-    <tr class="${isToday?'currentMatch':''}">
-      <td style="font-size: 11px;">${m.match}</td>
-      <td>${winnerCellHTML}</td>
-      <td>${m.tossWinner}</td>
-      <td><img class="logo" src="${logos[m.team]}" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${m.team}&background=random&color=fff&rounded=true&size=128&bold=true';">${m.team}</td>
-      <td><button onclick="deleteMatch('${m.id}')" style="padding: 5px; background: #ff4444; color: white;">❌</button></td>
-    </tr>`;
   });
 
-  document.getElementById("table").innerHTML=html;
-
-  let diff = p1T - p2T;
   document.getElementById("score").innerText =
-    diff > 0 ? `${p2} owes ${p1} ₹${diff}` :
-    diff < 0 ? `${p1} owes ${p2} ₹${Math.abs(diff)}` :
+    p1T>p2T ? `${p2} owes ${p1} ₹${p1T-p2T}` :
+    p2T>p1T ? `${p1} owes ${p2} ₹${p2T-p1T}` :
     "All settled 🤝";
-
-  let total = p1T + p2T;
-  if (total > 0) {
-    document.getElementById("chances").innerText = `${p1}: ${(p1T/total*100).toFixed(1)}% | ${p2}: ${(p2T/total*100).toFixed(1)}%`;
-  } else {
-    document.getElementById("chances").innerText = "No matches resolved yet.";
-  }
-
-  document.getElementById("streak").innerText = last ? `🔥 Streak: ${last} (${streak})` : `🔥 Streak: 0`;
-
-  updateChart(p1T, p2T);
-  
-  renderCalendar();
-  
-  if(!document.getElementById("calendarSelectedMatch").innerText) {
-      selectTodayMatch();
-  }
 }
 
-let chart;
-function updateChart(a,b){
-  if(chart) chart.destroy();
-  if(a === 0 && b === 0) return;
-  
-  chart=new Chart(document.getElementById("chart"),{
-    type:"pie",
-    data:{labels:[p1,p2],datasets:[{data:[a,b]}]},
-    options: { plugins: { legend: { labels: { color: 'white' } } } }
-  });
-}
+// ---------------- AUTO START ----------------
+fetchAllData(); // immediate
+setInterval(fetchAllData, 10000);
 
 </script>
 
