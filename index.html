@@ -283,6 +283,7 @@ const db = getFirestore(app);
 const p1="Shanks", p2="Whitebeard";
 
 let matches=[];
+let matchResults = {};
 let tossWinner="";
 let caller="";
 
@@ -475,10 +476,6 @@ async function fetchFullMatchData() {
     updateMatchResult(localMatch.id, winner);
   }
 }
-
-        if (localMatch) {
-          updateMatchResult(localMatch.id, winner);
-        }
       }
     });
   });
@@ -495,7 +492,7 @@ async function fetchFullMatchData() {
 
   console.log("Auto updated:", matchId, winner);
 }
-    setInterval(fetchMatchResultsFromAPI, 30000);
+
 
     const data = await response.json();
 
@@ -505,6 +502,8 @@ async function fetchFullMatchData() {
     console.error("API error:", err);
   }
 }
+
+    setInterval(fetchMatchResultsFromAPI, 30000);
 
 const dropdown = document.getElementById("match");
 
@@ -723,7 +722,7 @@ function render(){
     
     let winnerCellHTML = m.status === "Pending" 
       ? `<div class="badge-pending">⏳ Pending</div>
-         <button class="btn-resolve" onclick="resolveBet('${m.id}')">🏆 Set Winner</button>` 
+         <span class="badge-pending">⏳ Waiting Result</span>` 
       : m.winner;
 
     html+=`
