@@ -223,6 +223,19 @@
   <select id="teamChoice" style="width: auto;"></select>
 </div>
 
+
+
+  <div class="card">
+  <h2>🏏 Live IPL Dashboard</h2>
+
+  <div id="liveMatchCard"></div>
+
+  <div id="scoreDetails"></div>
+
+  <div id="matchStatus" style="color: gold;"></div>
+</div>
+  
+
 <div class="card">
   <button onclick="lockBet()" style="width: 100%; background: #00ff88; color: black; font-size: 16px;">🔒 Lock Bet ₹100</button>
 </div>
@@ -359,6 +372,139 @@ const matchList = [
   {id:69, date:"2026-05-24", name:"Match 69 - KKR vs DC", teams:["KKR","DC"]},
   {id:70, date:"2026-05-24", name:"Match 70 - MI vs RR", teams:["MI","RR"]},
 ];
+
+  function displayMatch(match) {
+
+  let team1 = match.matchInfo.team1.teamSName;
+  let team2 = match.matchInfo.team2.teamSName;
+
+  let score1 = match.matchScore?.team1Score?.inngs1;
+  let score2 = match.matchScore?.team2Score?.inngs1;
+
+  let status = match.matchInfo.status;
+
+  document.getElementById("liveMatchCard").innerHTML = `
+    <h3>${team1} vs ${team2}</h3>
+  `;
+
+  document.getElementById("scoreDetails").innerHTML = `
+    <p>${team1}: ${score1?.runs || "-"} / ${score1?.wickets || "-"} (${score1?.overs || "-"})</p>
+    <p>${team2}: ${score2?.runs || "-"} / ${score2?.wickets || "-"} (${score2?.overs || "-"})</p>
+  `;
+
+  document.getElementById("matchStatus").innerText = status;
+}
+  setInterval(fetchFullMatchData, 10000);
+
+  
+async function fetchFullMatchData() {
+  const res = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
+    method: "GET",
+    headers: {
+      "X-RapidAPI-Key": "YOUR_API_KEY",
+      "X-RapidAPI-Host": "cricbuzz-cricket.p.rapidapi.com"
+    }
+  });
+
+  const data = await res.json();
+
+  let match = data.typeMatches?.[0]?.seriesMatches?.[0]?.seriesAdWrapper?.matches?.[0];
+
+  if (!match) return;
+
+  displayMatch(match);
+}
+
+  //Live score board logic
+  async function fetchLiveScore() {
+  const res = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
+    method: "GET",
+    headers: {
+      "X-RapidAPI-Key": "YOUR_API_KEY",
+      "X-RapidAPI-Host": "cricbuzz-cricket.p.rapidapi.com"
+    }
+  });
+
+  const data = await res.json();
+
+  let liveMatch = data.typeMatches?.[0]?.seriesMatches?.[0]?.seriesAdWrapper?.matches?.[0];
+
+  if (!liveMatch) return;
+
+  let score = liveMatch.matchScore?.team1Score?.inngs1?.runs || "-";
+  let wickets = liveMatch.matchScore?.team1Score?.inngs1?.wickets || "-";
+  let overs = liveMatch.matchScore?.team1Score?.inngs1?.overs || "-";
+
+  document.getElementById("liveScore").innerText =
+    `🏏 Live: ${score}/${wickets} (${overs} overs)`;
+}
+  setInterval(fetchLiveScore, 10000);
+//Match result  logic
+  async function fetchMatchResultsFromAPI() {
+  try {
+    const response = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/live", {
+      method: "GET",
+      headers: {
+        "X-RapidAPI-Key": "YOUR_API_KEY",
+        "X-RapidAPI-Host": "cricbuzz-cricket.p.rapidapi.com"
+      }
+    });
+
+    function processMatches(apiData) {
+  let matchesList = apiData.typeMatches?.[0]?.seriesMatches || [];
+
+  matchesList.forEach(series => {
+    series.seriesAdWrapper?.matches?.forEach(match => {
+
+      let team1 = match.matchInfo.team1.teamSName;
+      let team2 = match.matchInfo.team2.teamSName;
+
+      let status = match.matchInfo.status;
+
+  if (status.toLowerCase().includes("won")) {
+
+      let winner = status.includes(team1) ? team1 : team2;
+
+    let localMatch = matchList.find(m =>
+      m.teams.includes(team1) && m.teams.includes(team2)
+    );
+
+  if (localMatch) {
+    console.log("🏆 Winner detected:", winner);
+
+    updateMatchResult(localMatch.id, winner);
+  }
+}
+
+        if (localMatch) {
+          updateMatchResult(localMatch.id, winner);
+        }
+      }
+    });
+  });
+}
+    async function updateMatchResult(matchId, winner) {
+
+  // Prevent duplicate updates
+  if (matchResults[matchId] === winner) return;
+
+  await addDoc(collection(db, "match_results"), {
+    matchId: matchId,
+    winner: winner
+  });
+
+  console.log("Auto updated:", matchId, winner);
+}
+    setInterval(fetchMatchResultsFromAPI, 30000);
+
+    const data = await response.json();
+
+    processMatches(data);
+
+  } catch (err) {
+    console.error("API error:", err);
+  }
+}
 
 const dropdown = document.getElementById("match");
 
